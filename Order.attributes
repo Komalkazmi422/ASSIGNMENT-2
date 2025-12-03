@@ -1,0 +1,171 @@
+Order.java
+import java.time.LocalDate;
+public class Order {
+    private String userName;
+    private int productId;
+    private int quantity;
+    private double price;
+    private String address;
+    private boolean urgent;
+    private String notes;
+    private LocalDate date;
+    public Order(String userName, int productId, int quantity, double price,
+                 String address, boolean urgent, String notes, LocalDate date) {
+        this.userName = userName;
+        this.productId = productId;
+        this.quantity = quantity;
+        this.price = price;
+        this.address = address;
+        this.urgent = urgent;
+        this.notes = notes;
+        this.date = date;
+    }
+    public String getUserName() { return userName; }
+    public int getProductId() { return productId; }
+    public int getQuantity() { return quantity; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
+    public double getPrice() { return price; }
+    public String getAddress() { return address; }
+    public boolean isUrgent() { return urgent; }
+    public String getNotes() { return notes; }
+    public LocalDate getDate() { return date; }
+}
+
+2: PaymentType.java
+public enum PaymentType {
+    CASH, CARD, BANK, OTHER
+}
+3: UserType.java
+public enum UserType {
+    REGULAR, SILVER, GOLD
+}
+4: Logger.java
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+public class Logger {
+    private final List<String> logs = new ArrayList<>();
+    public void logStart(String userName) {
+        logs.add("Start:" + userName);
+    }
+    public void logEnd(String userName) {
+        logs.add("End:" + userName);
+    }
+    public void info(String message) {
+        logs.add("INFO: " + message);
+    }
+
+    public void exportLogs(String filePath) throws IOException {
+        try (FileWriter fw = new FileWriter(filePath)) {
+            for (String log : logs) {
+                fw.write(log + "\n");
+            }  }
+    }}
+5: OrderService.java
+import java.io.FileWriter;
+import java.io.IOException;
+public class OrderService {
+    private final Logger logger;
+    private PaymentType paymentType;
+    private UserType userType;
+    public OrderService(Logger logger, PaymentType paymentType, UserType userType) {
+        this.logger = logger;
+        this.paymentType = paymentType;
+        this.userType = userType;
+    }
+    public void processOrder(Order order) throws IOException {
+        logger.logStart(order.getUserName());
+
+        if (order.isUrgent()) {
+            order.setQuantity(order.getQuantity() + 1);
+        }
+        if (order.getQuantity() <= 0 || order.getPrice() <= 0) {
+            System.out.println("Invalid quantity or price");
+            return;
+        }
+        double total = calculateTotal(order);
+        try (FileWriter fw = new FileWriter("order_data.txt", true)) {
+            fw.write("U:" + order.getUserName() + " P:" + order.getProductId() + " T:" + total + "\n");
+        }
+        printReport(order, total);
+        logger.logEnd(order.getUserName());
+    }
+    private double calculateTotal(Order order) {
+        double baseA = 10;
+        double baseB = 20;
+        double total = order.getQuantity() * order.getPrice() + baseA + baseB;
+        switch (userType) {
+            case REGULAR -> total -= 5;
+            case SILVER -> total -= 2;
+            case GOLD -> total += 5;
+        }
+        return total;
+    }
+    private void printReport(Order order, double total) {
+        System.out.println("----- ORDER REPORT -----");
+        System.out.println("User: " + order.getUserName());
+        System.out.println("Product: " + order.getProductId());
+        System.out.println("Quantity: " + order.getQuantity());
+        System.out.println("Total: " + total);
+        System.out.println("Date: " + order.getDate());
+        System.out.println("Payment Type: " + paymentType);
+    }
+}
+6:  DiscountService.java
+public class DiscountService {
+    public double applyDiscount(UserType type, double bill) {
+        return switch (type) {
+            case REGULAR -> bill - 10;
+            case SILVER -> bill - 2;
+            case GOLD -> bill - 1;
+        };
+    }
+}
+7:  ShippingService.java
+public class ShippingService {
+    public int calculateShipping(int distance) {
+        if (distance < 10) return 50;
+        if (distance < 50) return 100;
+        if (distance < 100) return 150;
+        return 200;
+    }
+}
+8:  SettingsManager.java
+import java.io.File;
+import java.util.Scanner;
+public class SettingsManager {
+    private UserType userType = UserType.REGULAR;
+    private PaymentType paymentType = PaymentType.CASH;
+    public void loadSettings(String filePath) {
+        try {
+            File file = new File(filePath);
+            Scanner s = new Scanner(file);
+            while (s.hasNextLine()) {
+                String line = s.nextLine();
+                if (line.startsWith("U")) userType = switch (Integer.parseInt(line.substring(2))) {
+                    case 1 -> UserType.REGULAR;
+                    case 2 -> UserType.SILVER;
+                    case 3 -> UserType.GOLD;
+                    default -> UserType.REGULAR;
+                };
+                if (line.startsWith("P")) paymentType = switch (line.substring(2)) {
+                    case "CASH" -> PaymentType.CASH;
+                    case "CARD" -> PaymentType.CARD;
+                    case "BANK" -> PaymentType.BANK;
+                    default -> PaymentType.OTHER;
+                };
+            }
+        } catch (Exception ex) {
+            System.out.println("Settings not loaded");
+        }
+    }
+    public UserType getUserType() { return userType; }
+    public PaymentType getPaymentType() { return paymentType; }
+}
+9:  Notifier.java
+public class Notifier {
+    public void notifyUser(String userName, String message) {
+        System.out.println("Notification for " + userName + ": " + message);
+    }
+}
