@@ -1,0 +1,23 @@
+import java.io.IOException;
+import java.time.LocalDate;
+public class Main {
+    public static void main(String[] args) throws IOException {
+        Logger logger = new Logger();
+        SettingsManager settings = new SettingsManager();
+        settings.loadSettings("settings.conf");
+        OrderService orderService = new OrderService(logger,
+                settings.getPaymentType(), settings.getUserType());
+        DiscountService discountService = new DiscountService();
+        ShippingService shippingService = new ShippingService();
+        Notifier notifier = new Notifier();
+        Order order = new Order("Ali", 101, 2, 999.99,
+                "Karachi", true, "Handle carefully", LocalDate.of(2025, 11, 12));
+        orderService.processOrder(order);
+        double discounted = discountService.applyDiscount(settings.getUserType(), 5000);
+        System.out.println("Discounted total: " + discounted);
+        int shippingCost = shippingService.calculateShipping(35);
+        System.out.println("Shipping cost: " + shippingCost);
+        logger.exportLogs("logs.txt");
+        notifier.notifyUser("Ali", "Your order has been processed successfully!");
+    }
+}
